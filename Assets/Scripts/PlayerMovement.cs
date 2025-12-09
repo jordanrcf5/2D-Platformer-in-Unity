@@ -11,11 +11,13 @@ public class PlayerMovement : MonoBehaviour
     public Animator animator;
     bool isFacingRight = true;
     public ParticleSystem smokeFX;
+    public ParticleSystem speedFX;
     BoxCollider2D playerCollider;
     [Header("Movement")]
     public float moveSpeed = 5f;
 
     float horizontalMovement;
+    float speedMultiplier = 1f;
 
     [Header("Dashing")]
     public float dashSpeed = 20f;
@@ -47,24 +49,37 @@ public class PlayerMovement : MonoBehaviour
     public Vector2 wallCheckSize = new Vector2(0.5f, 0.05f);
     public LayerMask wallLayer;
 
-     [Header("WallMovement")]
-     public float wallSlideSpeed = 2;
-     bool isWallSliding;
+    [Header("WallMovement")]
+    public float wallSlideSpeed = 2;
+    bool isWallSliding;
 
-     // Wall jumping
-     bool isWallJumping;
-     float wallJumpDirection;
-     float wallJumpTime = 0.5f;
-     float wallJumpTimer;
-     public Vector2 wallJumpPower = new Vector2(5f, 10f);
+    bool isWallJumping;
+    float wallJumpDirection;
+    float wallJumpTime = 0.5f;
+    float wallJumpTimer;
+    public Vector2 wallJumpPower = new Vector2(5f, 10f);
 
-     private void Start()
+    private void Start()
     {
         trailRenderer = GetComponent<TrailRenderer>();
         playerCollider = GetComponent<BoxCollider2D>();
+        SpeedItem.OnSpeedCollected += StartSpeedBoost;
     }
 
-    // Update is called once per frame
+    void StartSpeedBoost(float multiplier)
+    {
+        StartCoroutine(SpeedBoostCoroutine(multiplier));
+    }
+
+    private IEnumerator SpeedBoostCoroutine(float multiplier)
+    {
+        speedMultiplier = multiplier;
+        speedFX.Play();
+        yield return new WaitForSeconds(2f);
+        speedMultiplier = 1f;
+        speedFX.Stop();
+    }
+
     void Update()
     {
         animator.SetFloat("yVelocity", rb.linearVelocity.y);
@@ -75,23 +90,23 @@ public class PlayerMovement : MonoBehaviour
         {
             return;
         }
+
         groundCheck();
         ProcessGravity();
         Gravity();
         ProcessWallSlide();
         ProcessWallJump();
 
-        if(!isWallJumping)
+        if (!isWallJumping)
         {
-            rb.linearVelocity = new Vector2(horizontalMovement * moveSpeed, rb.linearVelocity.y);
+            rb.linearVelocity = new Vector2(horizontalMovement * moveSpeed * speedMultiplier, rb.linearVelocity.y);
             Flip();
         }
     }
 
     private void Gravity()
     {
-        
-    }  
+    }
 
     public void Move(InputAction.CallbackContext context)
     {
@@ -100,7 +115,7 @@ public class PlayerMovement : MonoBehaviour
 
     public void Dash(InputAction.CallbackContext context)
     {
-        if(context.performed && canDash)
+        if (context.performed && canDash)
         {
             StartCoroutine(DashCoroutine());
         }
@@ -115,11 +130,11 @@ public class PlayerMovement : MonoBehaviour
 
         float dashDirection = isFacingRight ? 1f : -1f;
 
-        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y); // Dash movement
+        rb.linearVelocity = new Vector2(dashDirection * dashSpeed, rb.linearVelocity.y);
 
         yield return new WaitForSeconds(dashDuration);
 
-        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y); // Reset horizontal velocity
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
 
         isDashing = false;
         trailRenderer.emitting = false;
@@ -131,9 +146,8 @@ public class PlayerMovement : MonoBehaviour
 
     public void Drop(InputAction.CallbackContext context)
     {
-        if(context.performed && isGrounded && isOnPlatform && playerCollider.enabled)
+        if (context.performed && isGrounded && isOnPlatform && playerCollider.enabled)
         {
-            //Coroutine dropping
             StartCoroutine(DisablePlayerCollider(0.25f));
         }
     }
@@ -147,7 +161,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.gameObject.CompareTag("Platform"))
+        if (collision.gameObject.CompareTag("Platform"))
         {
             isOnPlatform = true;
         }
@@ -155,7 +169,7 @@ public class PlayerMovement : MonoBehaviour
 
     void OnCollisionExit2D(Collision2D collision)
     {
-        if(collision.gameObject.CompareTag("Platform"))
+        if (collision.gameObject.CompareTag("Platform"))
         {
             isOnPlatform = false;
         }
@@ -167,39 +181,36 @@ public class PlayerMovement : MonoBehaviour
         {
             if (context.performed)
             {
-                // Hold down jump button = full height
                 rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpPower);
                 jumpsRemaining--;
                 animator.SetTrigger("jump");
                 smokeFX.Play();
             }
         }
+
         if (context.canceled)
-            {
-            // Light tap of jump button = half the height
+        {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
             jumpsRemaining--;
             JumpFX();
-            }
+        }
 
-        // Wall jump
-        if(context.performed && wallJumpTimer > 0f)
+        if (context.performed && wallJumpTimer > 0f)
         {
             isWallJumping = true;
-            rb.linearVelocity = new Vector2(wallJumpDirection * wallJumpPower.x, wallJumpPower.y); // Jump away from the wall
+            rb.linearVelocity = new Vector2(wallJumpDirection * wallJumpPower.x, wallJumpPower.y);
             wallJumpTimer = 0;
             JumpFX();
 
-            // Force flip
-            if(transform.localScale.x != wallJumpDirection)
+            if (transform.localScale.x != wallJumpDirection)
             {
-            isFacingRight = !isFacingRight;
-            Vector3 ls = transform.localScale;
-            ls.x *= -1f;
-            transform.localScale = ls;
+                isFacingRight = !isFacingRight;
+                Vector3 ls = transform.localScale;
+                ls.x *= -1f;
+                transform.localScale = ls;
             }
 
-            Invoke(nameof(CancelWallJump), wallJumpTime + 0.1f); // Wall jump = 0.5f -- jump again = 0.6f
+            Invoke(nameof(CancelWallJump), wallJumpTime + 0.1f);
         }
     }
 
@@ -207,7 +218,6 @@ public class PlayerMovement : MonoBehaviour
     {
         animator.SetTrigger("jump");
         smokeFX.Play();
-
     }
 
     private void groundCheck()
@@ -221,19 +231,19 @@ public class PlayerMovement : MonoBehaviour
         {
             isGrounded = false;
         }
-    }    
+    }
 
     private bool WallCheck()
     {
-       return Physics2D.OverlapBox(wallCheckPos.position, wallCheckSize, 0, wallLayer);
+        return Physics2D.OverlapBox(wallCheckPos.position, wallCheckSize, 0, wallLayer);
     }
+
     private void ProcessGravity()
     {
-        // Falling gravity
-        if(rb.linearVelocity.y < 0)
+        if (rb.linearVelocity.y < 0)
         {
-            rb.gravityScale = baseGravity * fallSpeedMultiplier; //Fall increasingly faster
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Max(rb.linearVelocity.y, - maxFallSpeed));
+            rb.gravityScale = baseGravity * fallSpeedMultiplier;
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Max(rb.linearVelocity.y, -maxFallSpeed));
         }
         else
         {
@@ -243,11 +253,10 @@ public class PlayerMovement : MonoBehaviour
 
     private void ProcessWallSlide()
     {
-        // Not grounded & on a wall & movement != 0
         if (!isGrounded && WallCheck() && horizontalMovement != 0)
         {
             isWallSliding = true;
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Max(rb.linearVelocity.y, -wallSlideSpeed)); // Caps fall rate
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Max(rb.linearVelocity.y, -wallSlideSpeed));
         }
         else
         {
@@ -262,10 +271,9 @@ public class PlayerMovement : MonoBehaviour
             isWallJumping = false;
             wallJumpDirection = -transform.localScale.x;
             wallJumpTimer = wallJumpTime;
-
             CancelInvoke(nameof(CancelWallJump));
         }
-        else if(wallJumpTimer > 0f)
+        else if (wallJumpTimer > 0f)
         {
             wallJumpTimer -= Time.deltaTime;
         }
@@ -278,14 +286,15 @@ public class PlayerMovement : MonoBehaviour
 
     private void Flip()
     {
-        if(isFacingRight && horizontalMovement < 0 || !isFacingRight && horizontalMovement > 0)
+        if (isFacingRight && horizontalMovement < 0 || !isFacingRight && horizontalMovement > 0)
         {
             isFacingRight = !isFacingRight;
             Vector3 ls = transform.localScale;
             ls.x *= -1f;
             transform.localScale = ls;
+            speedFX.transform.localScale = ls;
 
-            if(rb.linearVelocity.y == 0)
+            if (rb.linearVelocity.y == 0)
             {
                 smokeFX.Play();
             }
@@ -298,6 +307,5 @@ public class PlayerMovement : MonoBehaviour
         Gizmos.DrawWireCube(groundCheckPos.position, groundCheckSize);
         Gizmos.color = Color.blue;
         Gizmos.DrawWireCube(wallCheckPos.position, wallCheckSize);
-
     }
 }
