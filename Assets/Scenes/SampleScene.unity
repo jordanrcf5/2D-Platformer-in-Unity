@@ -3853,7 +3853,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Sprite: {fileID: -8160376994236589264, guid: baab62be922e97e41969d11b8060a93e, type: 3}
-  m_Color: {r: 0.5764706, g: 0.4392157, b: 0.8588236, a: 1}
+  m_Color: {r: 1, g: 0.9597835, b: 0.495283, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -18148,6 +18148,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1638679704477983036, guid: fc47fc2879a569b42b018a3ed1b7c182, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 2018149661, guid: c9cef357875a9cf4eb6c898a6c4e3038, type: 3}
     - target: {fileID: 2483944550045968325, guid: fc47fc2879a569b42b018a3ed1b7c182, type: 3}
       propertyPath: m_Camera
       value: 
