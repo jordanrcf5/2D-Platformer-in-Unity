@@ -5066,7 +5066,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 673022884, guid: c9cef357875a9cf4eb6c898a6c4e3038, type: 3}
+  m_Sprite: {fileID: 2018149661, guid: c9cef357875a9cf4eb6c898a6c4e3038, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -5343,6 +5343,7 @@ MonoBehaviour:
   rb: {fileID: 135304541969484544}
   animator: {fileID: 4085448649713263568}
   smokeFX: {fileID: 4998055887777305143}
+  speedFX: {fileID: 0}
   moveSpeed: 5
   dashSpeed: 20
   dashDuration: 0.25
